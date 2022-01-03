@@ -10,11 +10,11 @@ const TWITTER_LINK = `https://twitter.com/${TWITTER_HANDLE}`;
 const OPENSEA_LINK = "";
 const TOTAL_MINT_COUNT = 3;
 
-const CONTRACT_ADDRESS = "0xF18BeEC4F73056F192D37E36757e22568B630Ef8";
+const CONTRACT_ADDRESS = "0xcf7ed3acca5a467e9e704c703e8d87f634fb0fc9";
 
 const App = () => {
   const [currentAccount, setCurrentAccount] = useState("");
-  const [totalCurrentMinted, setTotalCurrentMinted] = useState();
+  const [totalMinted, setTotalMinted] = useState();
   // Render Methods
   const checkIfWalletIsConnected = async () => {
     const { ethereum } = window;
@@ -33,6 +33,7 @@ const App = () => {
       console.log("Found an authorised account: ", account);
       setCurrentAccount(account);
       setupEventListener();
+      getTotalNFTsMintedSoFar();
     } else {
       console.log("No authorized account found");
     }
@@ -52,8 +53,8 @@ const App = () => {
 
       console.log("Connected", accounts[0]);
       setCurrentAccount(accounts[0]);
+      getTotalNFTsMintedSoFar();
       setupEventListener();
-      await getTotalNFTsMintedSoFar();
     } catch (err) {
       console.log(err);
     }
@@ -77,7 +78,7 @@ const App = () => {
         Mint NFT
       </button>
       <p className="mint-total-text">
-        {totalCurrentMinted} / {TOTAL_MINT_COUNT} minted so far.
+        {totalMinted} / {TOTAL_MINT_COUNT} minted so far.
       </p>
     </div>
   );
@@ -100,7 +101,7 @@ const App = () => {
           alert(
             `Hey there! We've minted your NFT and sent it to your wallet. It may be blank right now. It can take a max of 10 min to show up on OpenSea. Here's the link: https://testnets.opensea.io/assets/${CONTRACT_ADDRESS}/${tokenId.toNumber()}`
           );
-          setTotalCurrentMinted(tokenId.toNumber() + 1);
+          console.log("token id: ", tokenId.toNumber());
         });
         console.log("Setup event listener!");
       } else {
@@ -154,10 +155,11 @@ const App = () => {
           myEpicNft.abi,
           signer
         );
+
         console.log("hello");
-        const totalMinted = await connectedContract.getCurrentTokenId();
+        const totalMinted = await connectedContract.getTotalMintedNFTs();
         console.log("total minted: ", totalMinted);
-        setTotalCurrentMinted(totalMinted);
+        setTotalMinted(totalMinted.toNumber());
       } else {
         console.log("Ethereum object doesn't exist!");
       }

@@ -3,67 +3,41 @@ import twitterLogo from "./assets/twitter-logo.svg";
 import React, { useEffect, useState } from "react";
 import { ethers } from "ethers";
 import myEpicNft from "./utils/MyEpicNFT.json";
-
-// Constants
-const TWITTER_HANDLE = "_buildspace";
-const TWITTER_LINK = `https://twitter.com/${TWITTER_HANDLE}`;
-const OPENSEA_LINK = "";
-const TOTAL_MINT_COUNT = 3;
-
-const CONTRACT_ADDRESS = "0xcf7ed3acca5a467e9e704c703e8d87f634fb0fc9";
+import { connectWallet, checkIfWalletIsConnected } from "./utils/wallet";
+import { mintNft } from "./utils/contract";
+import { CONTRACT_ADDRESS } from "./constants";
 
 const App = () => {
   const [currentAccount, setCurrentAccount] = useState("");
-  const [totalMinted, setTotalMinted] = useState();
-  // Render Methods
-  const checkIfWalletIsConnected = async () => {
-    const { ethereum } = window;
+  const [status, setStatus] = useState("");
+  const [hash, setHash] = useState("");
+  const [mintedTokenId, setMintedTokenId] = useState("");
+  const [isMinting, setIsMinting] = useState(false);
 
-    if (!ethereum) {
-      console.log("Make sure you have metamask!");
-      return;
-    } else {
-      console.log("We have the ethereum object", ethereum);
-    }
-
-    const accounts = await ethereum.request({ method: "eth_accounts" });
-
-    if (accounts.length !== 0) {
-      const account = accounts[0];
-      console.log("Found an authorised account: ", account);
-      setCurrentAccount(account);
+  const onConnectWalletClick = async () => {
+    const { account, status } = await connectWallet();
+    setCurrentAccount(account);
+    setStatus(status);
+    if (account !== "") {
       setupEventListener();
-      getTotalNFTsMintedSoFar();
-    } else {
-      console.log("No authorized account found");
     }
   };
 
-  const connectWallet = async () => {
-    try {
-      const { ethereum } = window;
-
-      if (!ethereum) {
-        alert("Get MetaMask!");
-        return;
-      }
-      const accounts = await ethereum.request({
-        method: "eth_requestAccounts",
-      });
-
-      console.log("Connected", accounts[0]);
-      setCurrentAccount(accounts[0]);
-      getTotalNFTsMintedSoFar();
-      setupEventListener();
-    } catch (err) {
-      console.log(err);
+  const onMintNftClick = async () => {
+    setIsMinting(true);
+    const { hash, status, error } = await mintNft(currentAccount);
+    if (error) {
+      setIsMinting(false);
+      return;
     }
+    setHash(hash);
+    setStatus(status);
   };
 
   const renderNotConnectedContainer = () => (
     <button
       className="cta-button connect-wallet-button"
-      onClick={connectWallet}
+      onClick={onConnectWalletClick}
     >
       Connect to Wallet
     </button>
@@ -73,20 +47,19 @@ const App = () => {
     <div>
       <button
         className="cta-button connect-wallet-button"
-        onClick={askContractToMintNtf}
+        onClick={onMintNftClick}
       >
         Mint NFT
       </button>
-      <p className="mint-total-text">
+      {/* <p className="mint-total-text">
         {totalMinted} / {TOTAL_MINT_COUNT} minted so far.
-      </p>
+      </p> */}
     </div>
   );
 
   const setupEventListener = async () => {
     try {
       const { ethereum } = window;
-
       if (ethereum) {
         const provider = new ethers.providers.Web3Provider(ethereum);
         const signer = provider.getSigner();
@@ -95,12 +68,13 @@ const App = () => {
           myEpicNft.abi,
           signer
         );
-
         connectedContract.on("NewEpicNFTMinted", (from, tokenId) => {
           console.log(from, tokenId.toNumber());
-          alert(
-            `Hey there! We've minted your NFT and sent it to your wallet. It may be blank right now. It can take a max of 10 min to show up on OpenSea. Here's the link: https://testnets.opensea.io/assets/${CONTRACT_ADDRESS}/${tokenId.toNumber()}`
-          );
+          setMintedTokenId(tokenId.toNumber());
+          // alert(
+          //   `Hey there! We've minted your NFT and sent it to your wallet. It may be blank right now. It can take a max of 10 min to show up on OpenSea. Here's the link: https://testnets.opensea.io/assets/${CONTRACT_ADDRESS}/${tokenId.toNumber()}`
+          // );
+          setIsMinting(false);
           console.log("token id: ", tokenId.toNumber());
         });
         console.log("Setup event listener!");
@@ -112,64 +86,16 @@ const App = () => {
     }
   };
 
-  const askContractToMintNtf = async () => {
-    try {
-      const { ethereum } = window;
-      if (ethereum) {
-        const provider = new ethers.providers.Web3Provider(ethereum);
-        const signer = provider.getSigner();
-        const connectedContract = new ethers.Contract(
-          CONTRACT_ADDRESS,
-          myEpicNft.abi,
-          signer
-        );
-
-        console.log("Going to pop wallet now to pay gas...");
-
-        let nftTxn = await connectedContract.makeAnEpicNFT();
-
-        console.log("Mining... please wait.");
-
-        await nftTxn.wait();
-
-        console.log(
-          `Minted, see transaction: https://rinkeby.etherscan.io/tx/${nftTxn.hash}`
-        );
-      } else {
-        console.log("Ethereum object doesn't exist!");
-      }
-    } catch (err) {
-      console.log(err);
-    }
-  };
-
-  const getTotalNFTsMintedSoFar = async () => {
-    try {
-      console.log("hello again");
-      const { ethereum } = window;
-      if (ethereum) {
-        const provider = new ethers.providers.Web3Provider(ethereum);
-        const signer = provider.getSigner();
-        const connectedContract = new ethers.Contract(
-          CONTRACT_ADDRESS,
-          myEpicNft.abi,
-          signer
-        );
-
-        console.log("hello");
-        const totalMinted = await connectedContract.getTotalMintedNFTs();
-        console.log("total minted: ", totalMinted);
-        setTotalMinted(totalMinted.toNumber());
-      } else {
-        console.log("Ethereum object doesn't exist!");
-      }
-    } catch (err) {
-      console.log(err);
-    }
-  };
-
   useEffect(() => {
-    checkIfWalletIsConnected();
+    async function fetchData() {
+      const { account, status } = await checkIfWalletIsConnected();
+      setCurrentAccount(account);
+      setStatus(status);
+      if (account !== "") {
+        setupEventListener();
+      }
+    }
+    fetchData();
   }, []);
 
   return (
@@ -184,15 +110,7 @@ const App = () => {
             ? renderNotConnectedContainer()
             : renderMintUI()}
         </div>
-        <div className="footer-container">
-          <img alt="Twitter Logo" className="twitter-logo" src={twitterLogo} />
-          <a
-            className="footer-text"
-            href={TWITTER_LINK}
-            target="_blank"
-            rel="noreferrer"
-          >{`built on @${TWITTER_HANDLE}`}</a>
-        </div>
+        <div className="footer-container"></div>
       </div>
     </div>
   );

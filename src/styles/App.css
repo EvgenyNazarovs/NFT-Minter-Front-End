@@ -94,6 +94,19 @@
   font-weight: bold;
 }
 
+.animation-wrapper {
+  display: inline-block;
+  color: #444;
+  border: 1px solid #ccc;
+  background: #ddd;
+  box-shadow: 0 0 5px -1px rgba(0, 0, 0, 0.2);
+  cursor: pointer;
+  vertical-align: middle;
+  min-width: 100px;
+  padding: 5px;
+  text-align: center;
+}
+
 /* KeyFrames */
 @-webkit-keyframes gradient-animation {
   0% {

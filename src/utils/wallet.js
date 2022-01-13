@@ -40,16 +40,16 @@ export const getCurrentWalletConnected = async () => {
   if (!ethereum) {
     return {
       account: "",
-      status: "Get MetaMask!",
+      status: "Connect your MetaMask 🦊 wallet to start minting.",
     };
   }
 
   try {
-    const accounts = await ethereum.request({ methods: "eth_accounts" });
+    const accounts = await ethereum.request({ method: "eth_accounts" });
     if (accounts.length !== 0) {
       return {
         account: accounts[0],
-        status: "Found an authorised account",
+        status: "Wallet Connected! ✅",
       };
     } else {
       return {
@@ -59,5 +59,9 @@ export const getCurrentWalletConnected = async () => {
     }
   } catch (err) {
     console.error(err);
+    return {
+      account: "",
+      status: "ERROR",
+    };
   }
 };

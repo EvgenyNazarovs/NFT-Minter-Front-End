@@ -1,36 +1,27 @@
 import "./styles/App.css";
-import twitterLogo from "./assets/twitter-logo.svg";
 import React, { useEffect, useState } from "react";
 import { ethers } from "ethers";
 import myEpicNft from "./utils/MyEpicNFT.json";
-import { connectWallet, checkIfWalletIsConnected } from "./utils/wallet";
-import { mintNft } from "./utils/contract";
-import { CONTRACT_ADDRESS } from "./constants";
+import { connectWallet, getCurrentWalletConnected } from "./utils/wallet";
+import {
+  CONTRACT_ADDRESS,
+  TOTAL_MINT_COUNT,
+  RINKEBY_URL,
+  OPENSEA_LINK,
+  RARIBLE_URL,
+} from "./constants";
+import Loading from "./Animation";
 
 const App = () => {
   const [currentAccount, setCurrentAccount] = useState("");
   const [status, setStatus] = useState("");
   const [hash, setHash] = useState("");
-  const [mintedTokenId, setMintedTokenId] = useState("");
   const [isMinting, setIsMinting] = useState(false);
+  const [mintedNumber, setMintedNumber] = useState(0);
 
   const onConnectWalletClick = async () => {
     const { account, status } = await connectWallet();
     setCurrentAccount(account);
-    setStatus(status);
-    if (account !== "") {
-      setupEventListener();
-    }
-  };
-
-  const onMintNftClick = async () => {
-    setIsMinting(true);
-    const { hash, status, error } = await mintNft(currentAccount);
-    if (error) {
-      setIsMinting(false);
-      return;
-    }
-    setHash(hash);
     setStatus(status);
   };
 
@@ -45,15 +36,16 @@ const App = () => {
 
   const renderMintUI = () => (
     <div>
-      <button
-        className="cta-button connect-wallet-button"
-        onClick={onMintNftClick}
-      >
-        Mint NFT
-      </button>
-      {/* <p className="mint-total-text">
-        {totalMinted} / {TOTAL_MINT_COUNT} minted so far.
-      </p> */}
+      {isMinting ? (
+        <Loading></Loading>
+      ) : (
+        <button className="cta-button mint-button" onClick={mintNft}>
+          Mint NFT
+        </button>
+      )}
+      <p className="mint-total-text">
+        Total Minted So Far: {mintedNumber} / {TOTAL_MINT_COUNT}.
+      </p>
     </div>
   );
 
@@ -69,34 +61,108 @@ const App = () => {
           signer
         );
         connectedContract.on("NewEpicNFTMinted", (from, tokenId) => {
-          console.log(from, tokenId.toNumber());
-          setMintedTokenId(tokenId.toNumber());
-          // alert(
-          //   `Hey there! We've minted your NFT and sent it to your wallet. It may be blank right now. It can take a max of 10 min to show up on OpenSea. Here's the link: https://testnets.opensea.io/assets/${CONTRACT_ADDRESS}/${tokenId.toNumber()}`
-          // );
+          const tokenNumberId = tokenId.toNumber();
+          const newStatus = (
+            <div>
+              <p>
+                We've minted your NFT and sent it to your wallet. It may be
+                blank right now. It can take a max of 10 min to show up on
+                OpenSea.
+              </p>
+              <p>
+                See your NFT on OpenSea (may take up to 10 min):
+                <a href={OPENSEA_LINK + "" + tokenNumberId}>
+                  {OPENSEA_LINK}/{tokenNumberId}
+                </a>
+              </p>
+              <p>
+                <a href={RARIBLE_URL + "/" + tokenNumberId}>
+                  See your NFT on Rarible: {RARIBLE_URL}
+                  {tokenNumberId}
+                </a>
+              </p>
+            </div>
+          );
+          setStatus(newStatus);
+          connectedContract
+            .getTotalMintedNFTs()
+            .then((total) => setMintedNumber(total.toNumber()))
+            .catch((err) => console.error(err));
           setIsMinting(false);
-          console.log("token id: ", tokenId.toNumber());
         });
         console.log("Setup event listener!");
       } else {
-        console.log("Ethereum object doesn't exist!");
+        setStatus("Can't connect to your MetaMask account.");
       }
     } catch (err) {
       console.log(err);
     }
   };
 
+  const mintNft = async () => {
+    const { ethereum } = window;
+    if (ethereum) {
+      try {
+        if (currentAccount === "") {
+          setStatus("Please connect your MetaMask 🦊 account first.");
+          return;
+        }
+        setIsMinting(true);
+        const provider = new ethers.providers.Web3Provider(ethereum);
+        const signer = provider.getSigner();
+        const connectedContract = new ethers.Contract(
+          CONTRACT_ADDRESS,
+          myEpicNft.abi,
+          signer
+        );
+        setStatus("Going to pop wallet now to pay gas... ⛽️");
+        const txn = await connectedContract.makeAnEpicNFT();
+        setStatus("Minting...");
+        await txn.wait();
+        // setStatus(`Minted, see transaction: ${RINKEBY_URL}/${txn.hash}`);
+      } catch (error) {
+        setStatus("Sorry, there was a minting error 😳");
+        setIsMinting(false);
+      }
+    } else {
+      setStatus("Please connect your MetaMask 🦊 account first.");
+    }
+  };
+
+  const getTotalNFTsMintedSoFar = async () => {
+    try {
+      const { ethereum } = window;
+      if (ethereum) {
+        const provider = new ethers.providers.Web3Provider(ethereum);
+        const signer = provider.getSigner();
+        const connectedContract = new ethers.Contract(
+          CONTRACT_ADDRESS,
+          myEpicNft.abi,
+          signer
+        );
+        const totalMinted = await connectedContract.getTotalMintedNFTs();
+        setMintedNumber(totalMinted.toNumber());
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   useEffect(() => {
     async function fetchData() {
-      const { account, status } = await checkIfWalletIsConnected();
+      const { account, status } = await getCurrentWalletConnected();
       setCurrentAccount(account);
       setStatus(status);
-      if (account !== "") {
-        setupEventListener();
-      }
     }
     fetchData();
   }, []);
+
+  useEffect(() => {
+    if (currentAccount !== "") {
+      setupEventListener();
+      getTotalNFTsMintedSoFar();
+    }
+  }, [currentAccount]);
 
   return (
     <div className="App">
@@ -110,6 +176,7 @@ const App = () => {
             ? renderNotConnectedContainer()
             : renderMintUI()}
         </div>
+        <div className="sub-text">{status}</div>
         <div className="footer-container"></div>
       </div>
     </div>

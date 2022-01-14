@@ -57,6 +57,7 @@
   background: -webkit-linear-gradient(left, #60c657, #35aee2);
   background-size: 200% 200%;
   animation: gradient-animation 4s ease infinite;
+  margin-left: 10px;
 }
 
 .mint-button {
@@ -64,10 +65,45 @@
   background-size: 200% 200%;
   animation: gradient-animation 4s ease infinite;
   margin-right: 15px;
+  margin-left: 10px;
+}
+
+.see-collection-button {
+  background: -webkit-linear-gradient(left, #0068e5, #79e2ff);
+  background-size: 200% 200%;
+  animation: gradient-animation 4s ease infinite;
+  margin-right: 10px;
+}
+
+.user-link-button {
+  height: 45px;
+  border: 0;
+  width: 20vw;
+  padding-left: 10px;
+  padding-right: 10px;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: bold;
+  color: white;
+  text-decoration: none;
+  border-radius: 5px;
+}
+
+.collection-link {
+  text-decoration: none;
+  color: white;
 }
 
 .opensea-button {
-  background-color: rgb(32, 129, 226);
+  background-color: #60c657;
+}
+
+.opensea-collection-button {
+  background-color: #bf346b;
+}
+
+.rarible-button {
+  background-color: #0000ff;
 }
 
 .mint-count {
@@ -92,19 +128,6 @@
   color: white;
   font-size: 16px;
   font-weight: bold;
-}
-
-.animation-wrapper {
-  display: inline-block;
-  color: #444;
-  border: 1px solid #ccc;
-  background: #ddd;
-  box-shadow: 0 0 5px -1px rgba(0, 0, 0, 0.2);
-  cursor: pointer;
-  vertical-align: middle;
-  min-width: 100px;
-  padding: 5px;
-  text-align: center;
 }
 
 /* KeyFrames */

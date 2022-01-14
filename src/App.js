@@ -9,15 +9,19 @@ import {
   RINKEBY_URL,
   OPENSEA_LINK,
   RARIBLE_URL,
+  COLLECTION_URL,
 } from "./constants";
-import Loading from "./Animation";
+import Loading from "./Loading";
 
 const App = () => {
   const [currentAccount, setCurrentAccount] = useState("");
+  const [rinkebyUrl, setRinkebyUrl] = useState("");
+  const [openSeaUrl, setOpenSeaUrl] = useState("");
+  const [raribleUrl, setRaribleUrl] = useState("");
   const [status, setStatus] = useState("");
-  const [hash, setHash] = useState("");
   const [isMinting, setIsMinting] = useState(false);
-  const [mintedNumber, setMintedNumber] = useState(0);
+  const [mintedNumber, setMintedNumber] = useState(null);
+  const [showUrls, setShowUrls] = useState(false);
 
   const onConnectWalletClick = async () => {
     const { account, status } = await connectWallet();
@@ -34,19 +38,19 @@ const App = () => {
     </button>
   );
 
-  const renderMintUI = () => (
-    <div>
-      {isMinting ? (
-        <Loading></Loading>
-      ) : (
-        <button className="cta-button mint-button" onClick={mintNft}>
-          Mint NFT
-        </button>
-      )}
-      <p className="mint-total-text">
-        Total Minted So Far: {mintedNumber} / {TOTAL_MINT_COUNT}.
-      </p>
-    </div>
+  const renderMintUI = () =>
+    isMinting ? (
+      <Loading></Loading>
+    ) : (
+      <button className="cta-button mint-button" onClick={mintNft}>
+        Mint NFT
+      </button>
+    );
+
+  const renderTotalMintedSoFar = () => (
+    <p className="mint-total-text">
+      Total Minted So Far: {mintedNumber} / {TOTAL_MINT_COUNT}.
+    </p>
   );
 
   const setupEventListener = async () => {
@@ -62,33 +66,25 @@ const App = () => {
         );
         connectedContract.on("NewEpicNFTMinted", (from, tokenId) => {
           const tokenNumberId = tokenId.toNumber();
-          const newStatus = (
+          const openSea = `${OPENSEA_LINK}/${tokenNumberId}`;
+          const rarible = RARIBLE_URL + tokenNumberId;
+          setOpenSeaUrl(openSea);
+          setRaribleUrl(rarible);
+
+          const mintedMsg = (
             <div>
-              <p>
-                We've minted your NFT and sent it to your wallet. It may be
-                blank right now. It can take a max of 10 min to show up on
-                OpenSea.
-              </p>
-              <p>
-                See your NFT on OpenSea (may take up to 10 min):
-                <a href={OPENSEA_LINK + "" + tokenNumberId}>
-                  {OPENSEA_LINK}/{tokenNumberId}
-                </a>
-              </p>
-              <p>
-                <a href={RARIBLE_URL + "/" + tokenNumberId}>
-                  See your NFT on Rarible: {RARIBLE_URL}
-                  {tokenNumberId}
-                </a>
-              </p>
+              <p>We've minted your NFT and sent it to your wallet. 😍</p>
+              <p>It may take up to 10 min to display on OpenSea.</p>
             </div>
           );
-          setStatus(newStatus);
+
           connectedContract
             .getTotalMintedNFTs()
             .then((total) => setMintedNumber(total.toNumber()))
             .catch((err) => console.error(err));
           setIsMinting(false);
+          setStatus(mintedMsg);
+          setShowUrls(true);
         });
         console.log("Setup event listener!");
       } else {
@@ -99,6 +95,49 @@ const App = () => {
     }
   };
 
+  const renderUserUrls = () => (
+    <div>
+      <p>
+        <button className="user-link-button opensea-button">
+          <a
+            href={rinkebyUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="collection-link"
+          >
+            Your Transaction
+          </a>
+        </button>
+      </p>
+
+      <p>
+        <button className="user-link-button opensea-collection-button">
+          <a
+            href={openSeaUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="cta-button collection-link"
+          >
+            Your NFT on OpenSea
+          </a>
+        </button>
+      </p>
+
+      <p>
+        <button className="user-link-button rarible-button">
+          <a
+            href={raribleUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="cta-button collection-link"
+          >
+            Your NFT on Rarible
+          </a>
+        </button>
+      </p>
+    </div>
+  );
+
   const mintNft = async () => {
     const { ethereum } = window;
     if (ethereum) {
@@ -107,7 +146,7 @@ const App = () => {
           setStatus("Please connect your MetaMask 🦊 account first.");
           return;
         }
-        setIsMinting(true);
+
         const provider = new ethers.providers.Web3Provider(ethereum);
         const signer = provider.getSigner();
         const connectedContract = new ethers.Contract(
@@ -117,9 +156,10 @@ const App = () => {
         );
         setStatus("Going to pop wallet now to pay gas... ⛽️");
         const txn = await connectedContract.makeAnEpicNFT();
+        setIsMinting(true);
         setStatus("Minting...");
         await txn.wait();
-        // setStatus(`Minted, see transaction: ${RINKEBY_URL}/${txn.hash}`);
+        setRinkebyUrl(`${RINKEBY_URL}/${txn.hash}`);
       } catch (error) {
         setStatus("Sorry, there was a minting error 😳");
         setIsMinting(false);
@@ -172,11 +212,28 @@ const App = () => {
           <p className="sub-text">
             Best writers. Finest foods. What are they like.
           </p>
+          <button className="cta-button see-collection-button">
+            <a
+              href={COLLECTION_URL}
+              target="_blank"
+              rel="noreferrer"
+              className="collection-link"
+            >
+              See Collection
+            </a>
+          </button>
+
           {currentAccount === ""
             ? renderNotConnectedContainer()
             : renderMintUI()}
+
+          {mintedNumber && renderTotalMintedSoFar()}
         </div>
-        <div className="sub-text">{status}</div>
+
+        <div className="sub-text">
+          {status}
+          {showUrls && renderUserUrls()}
+        </div>
         <div className="footer-container"></div>
       </div>
     </div>

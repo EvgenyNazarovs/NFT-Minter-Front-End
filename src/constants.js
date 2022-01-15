@@ -6,3 +6,6 @@ export const OPENSEA_LINK = `https://testnets.opensea.io/assets/${CONTRACT_ADDRE
 export const RARIBLE_URL = `https://rinkeby.rarible.com/token/${CONTRACT_ADDRESS}:`;
 export const COLLECTION_URL =
   "https://testnets.opensea.io/collection/cyprus-m6f99ffraw";
+export const TWITTER_HANDLE = "_buildspace";
+export const TWITTER_LINK = `https://twitter.com/${TWITTER_HANDLE}`;
+export const GITHUB_LINK = "https://github.com/EvgenyNazarovs";

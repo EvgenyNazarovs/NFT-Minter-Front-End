@@ -1,4 +1,6 @@
 import "./styles/App.css";
+import twitterLogo from "./assets/twitter-logo.svg";
+import githubLogo from "./assets/github-logo.png";
 import React, { useEffect, useState } from "react";
 import { ethers } from "ethers";
 import myEpicNft from "./utils/MyEpicNFT.json";
@@ -10,6 +12,9 @@ import {
   OPENSEA_LINK,
   RARIBLE_URL,
   COLLECTION_URL,
+  TWITTER_HANDLE,
+  TWITTER_LINK,
+  GITHUB_LINK,
 } from "./constants";
 import Loading from "./Loading";
 
@@ -234,7 +239,36 @@ const App = () => {
           {status}
           {showUrls && renderUserUrls()}
         </div>
-        <div className="footer-container"></div>
+        <div className="footer-container">
+          <div className="logo-container">
+            <img
+              alt="Twitter Logo"
+              className="social-media-logo"
+              src={twitterLogo}
+            />
+            <a
+              className="footer-text"
+              href={TWITTER_LINK}
+              target="_blank"
+              rel="noreferrer"
+            >{`built on @${TWITTER_HANDLE}`}</a>
+          </div>
+          <div className="logo-container">
+            <img
+              alt="Github logo"
+              className="social-media-logo"
+              src={githubLogo}
+            />
+            <a
+              className="footer-text github-text"
+              href={GITHUB_LINK}
+              target="_blank"
+              rel="noreferrer"
+            >
+              my github
+            </a>
+          </div>
+        </div>
       </div>
     </div>
   );
